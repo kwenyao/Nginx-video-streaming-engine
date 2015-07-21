@@ -63,7 +63,7 @@ class Auth(Resource):
             cursor.callproc('AuthenticateUser',(_userName,))
             data = cursor.fetchall()
             if(len(data)>0):
-                if(str(data[0][1])==_userPassword):
+                if(str(data[0][1])==_userPassword): # Authenticated
                     return {'status':200,'Username':str(data[0][0])}
                 else:
                     return {'status':100,'message':'Authentication failure'}

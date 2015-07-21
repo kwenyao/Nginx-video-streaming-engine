@@ -2,6 +2,10 @@
 
 SCRIPT_DIRECTORY=/usr/build
 SCRIPT_NAME=dbconfig.py
+MYSQL_HOST=localhost
+MYSQL_USER=root
+MYSQL_PASSWORD=root
+DATABASE_NAME=auth
 
 sudo apt-get update
 sudo apt-get -y install python-dev libmysqlclient-dev
@@ -121,4 +125,4 @@ if __name__ == '__main__':
 EOF
 
 cd "$SCRIPT_DIRECTORY"
-python "$SCRIPT_NAME" localhost root root auth
+python "$SCRIPT_NAME" "$MYSQL_HOST" "$MYSQL_USER" "$MYSQL_PASSWORD" "$DATABASE_NAME"

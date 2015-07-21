@@ -1,0 +1,72 @@
+##########################################################################################################
+
+# General ffmpeg parameters format
+ffmpeg [global_options] {[input_file_options] -i input_file} ... {[output_file_options] output_file} ...
+
+##########################################################################################################
+
+# Useful stream specifiers
+’v’ for video, ’a’ for audio, ’s’ for subtitle, ’d’ for data, and ’t’ for attachments
+
+##########################################################################################################
+
+# Useful expressions
+-- gte(x, y) 
+	Return 1 if x is greater than or equal to y, 0 otherwise.
+
+-- isnan(x)
+	Return 1.0 if x is NAN, 0.0 otherwise.
+
+-- if(x, y)
+	Evaluate x, and if the result is non-zero return the result of the evaluation of y, return 0 otherwise.
+
+-- if(x, y, z)
+	Evaluate x, and if the result is non-zero return the evaluation result of y, otherwise the evaluation result of z.
+
+##########################################################################################################
+
+# Change bitrate (-b)
+- To set the video bitrate of the output file to 64 kbit/s:
+ffmpeg -i input.avi -b:v 64k -bufsize 64k output.avi
+
+- To force CBR video output:
+ffmpeg -i myfile.avi -b 4000k -minrate 4000k -maxrate 4000k -bufsize 1835k out.m2v
+
+##########################################################################################################
+
+# Force keyframe intervals (-force_key_frames)
+If the argument is prefixed with expr:, the string expr is interpreted like an expression and is evaluated for each frame. A key frame is forced in case the evaluation is non-zero.
+
+-- n
+	the number of current processed frame, starting from 0
+
+-- n_forced
+	the number of forced frames
+
+-- prev_forced_n
+	the number of the previous forced frame, it is NAN when no keyframe was forced yet
+
+-- prev_forced_t
+	the time of the previous forced frame, it is NAN when no keyframe was forced yet
+
+-- t
+	the time of the current processed frame
+
+- To force a key frame every 5 seconds, you can specify:
+-force_key_frames expr:gte(t,n_forced*5)
+
+- To force a key frame 5 seconds after the time of the last forced one, starting from second 13:
+-force_key_frames expr:if(isnan(prev_forced_t),gte(t,13),gte(t,prev_forced_t+5))
+
+##########################################################################################################
+
+# Video Scaling (-vf scale=x:y)
+- To scale an input video to a fixed size (e.g. 620x360):
+ffmpeg -i input.avi -vf scale=640:360 output.avi
+
+- To scale an input video to a dynamic size (e.g. height of 360):
+ffmpeg -i input.avi -vf scale=-1:360 output.avi
+
+** To keep the aspect ratio, we need to specify only one component, either width or height, and set the other component to -1
+
+##########################################################################################################

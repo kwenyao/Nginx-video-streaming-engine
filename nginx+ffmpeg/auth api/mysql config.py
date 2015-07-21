@@ -87,18 +87,20 @@ def create_procedures(cursor):
     procedure_authenticate_user(cursor)
     return
 
+def execute():
+    MYSQL_HOST = sys.argv[1]
+    MYSQL_USER = sys.argv[2]
+    MYSQL_PASSWORD = sys.argv[3]
+    DATABASE_NAME = sys.argv[4]
+    mysqlConn = connect_to_mysql_server(MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, DATABASE_NAME)
+    cursor = mysqlConn.cursor()
+    create_table(DATABASE_NAME, cursor)
+    create_procedures(cursor)
+    cursor.close()
+    mysqlConn.close()
+
 if __name__ == '__main__':
     if len(sys.argv) > 4:
-        MYSQL_HOST = sys.argv[1]
-        MYSQL_USER = sys.argv[2]
-        MYSQL_PASSWORD = sys.argv[3]
-        DATABASE_NAME = sys.argv[4]
-        mysqlConn = connect_to_mysql_server(MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, DATABASE_NAME)
-        cursor = mysqlConn.cursor()
-        create_table(DATABASE_NAME, cursor)
-        create_procedures(cursor)
-        cursor.close()
-        mysqlConn.close()
-
+        execute()
     else:
         print 'Missing argument(s). Please enter <MySQL host> <MySQL user> <MySQL password> <Database name>'

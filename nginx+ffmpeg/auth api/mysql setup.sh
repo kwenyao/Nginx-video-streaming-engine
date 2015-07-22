@@ -14,6 +14,8 @@ sudo apt-get -y install python-mysql.connector
 sudo pip install flask-restful
 sudo pip install flask-mysql
 sudo pip install MySQL-python
+sudo pip install redis
+sudo pip install bcrypt
 
 cat <<'EOF' |sudo tee "$SCRIPT_DIRECTORY"/"$SCRIPT_NAME"
 
@@ -27,7 +29,7 @@ from collections import OrderedDict
 
 TABLE_NAME = 'credentials'
 TABLE_ATTR = OrderedDict([('username', 'VARCHAR(32)'),
-                          ('password', 'VARCHAR(32)')
+                          ('password', 'CHAR(60)')
                           ])
 PRIMARY_KEY = 'username'
 
@@ -52,6 +54,18 @@ def create_database(host, user, password, dbname):
     cursor.close()
     connection.close()
 
+def alter_password_field(cursor):
+    statement = """ALTER TABLE {tableName}
+                MODIFY password {passwdType}
+                CHARACTER SET latin1 COLLATE latin1_danish_ci
+                """.format(tableName=TABLE_NAME,
+                           passwdType=TABLE_ATTR.get('password'))
+    try:
+        cursor.execute(statement)
+    except mysql.connector.Error as err:
+        print("MYSQL Error: {}".format(err))
+
+
 def create_table(dbname, cursor):
     statement1 =  "CREATE TABLE IF NOT EXISTS {0}.{1}(".format(dbname, TABLE_NAME)
     statement2 = ""
@@ -63,15 +77,16 @@ def create_table(dbname, cursor):
     try:
         cursor.execute(sqlstatement)
     except mysql.connector.Error as err:
-            print("MYSQL Error: {}".format(err))
+        print("MYSQL Error: {}".format(err))
+    alter_password_field(cursor)
     return
 
 def procedure_create_user(cursor):
     procedureName = 'CreateUser'
     cursor.execute("DROP procedure IF EXISTS {0};".format(procedureName))
     statement = """CREATE PROCEDURE {procedureName} (
-                IN p_username varchar(50),
-                IN p_password varchar(50)
+                IN p_username {userType},
+                IN p_password {passwordType}
                 )
                 BEGIN
                     if ( select exists (select 1 from {tableName} where username = p_username) ) THEN
@@ -79,7 +94,10 @@ def procedure_create_user(cursor):
                     ELSE
                         insert into {tableName}(username,password) values(p_username, p_password);
                     END IF;
-                END""".format(procedureName=procedureName, tableName=TABLE_NAME)
+                END""".format(procedureName=procedureName,
+                              tableName=TABLE_NAME,
+                              userType=TABLE_ATTR.get('username'),
+                              passwordType=TABLE_ATTR.get('password'))
     try:
         cursor.execute(statement)
     except MySQLdb.Error as err:
@@ -90,11 +108,13 @@ def procedure_authenticate_user(cursor):
     procedureName = 'AuthenticateUser'
     cursor.execute("DROP procedure IF EXISTS {0};".format(procedureName))
     statement = """CREATE PROCEDURE {procedureName} (
-                IN p_username VARCHAR(20)
+                IN p_username {userType}
                 )
                 BEGIN
                      select * from {tableName} where username = p_username;
-                END""".format(procedureName=procedureName, tableName=TABLE_NAME)
+                END""".format(procedureName=procedureName,
+                              userType=TABLE_ATTR.get('username'),
+                              tableName=TABLE_NAME)
     try:
         cursor.execute(statement)
     except MySQLdb.Error as err:

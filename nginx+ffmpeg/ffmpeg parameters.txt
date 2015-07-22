@@ -3,6 +3,9 @@
 # General ffmpeg parameters format
 ffmpeg [global_options] {[input_file_options] -i input_file} ... {[output_file_options] output_file} ...
 
+** More than 1 input and output file can be defined by repeating the file options + file name
+e.g. ffmpeg [global options] [input1_options] -i [input1] [input2_options] -i [input2] [output1_options] [output1] [output2_options] [output2]
+
 ##########################################################################################################
 
 # Useful stream specifiers
@@ -30,7 +33,7 @@ ffmpeg [global_options] {[input_file_options] -i input_file} ... {[output_file_o
 ffmpeg -i input.avi -b:v 64k -bufsize 64k output.avi
 
 - To force CBR video output:
-ffmpeg -i myfile.avi -b 4000k -minrate 4000k -maxrate 4000k -bufsize 1835k out.m2v
+ffmpeg -i myfile.avi -b 4000k -minrate 4000k -maxrate 4000k -bufsize 1.9M out.m2v
 
 ##########################################################################################################
 
@@ -63,8 +66,20 @@ If the argument is prefixed with expr:, the string expr is interpreted like an e
 # Video Scaling (-vf scale=x:y)
 - To scale an input video to a fixed size (e.g. 620x360):
 ffmpeg -i input.avi -vf scale=640:360 output.avi
+OR
+ffmpeg -i input.avi -s 640x360 output.avi
 
-- To scale an input video to a dynamic size (e.g. height of 360):
+- To scale a video proportionately to input (e.g. half sized video):
+ffmpeg -i input.mpg -vf scale = iw/2:ih/2 output.mp4
+
+- Scaling to predefined width or height (dynamic size):
+	To set the output width to 400 pixels and the height proportionately, we can use the command:
+	ffmpeg -i input.avi -vf scale=400:400/a output.mp4
+
+	To change the output height to 300 pixels and the width proportionately, the command can be:
+	ffmpeg -i input.avi -vf scale=300*a:300 output.mp4
+
+- Another way to scale an input video to a dynamic size (e.g. height of 360):
 ffmpeg -i input.avi -vf scale=-1:360 output.avi
 
 ** To keep the aspect ratio, we need to specify only one component, either width or height, and set the other component to -1

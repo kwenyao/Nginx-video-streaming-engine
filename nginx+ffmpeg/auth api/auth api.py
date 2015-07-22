@@ -1,6 +1,9 @@
 __author__ = 'Wen Yao'
 
 import bcrypt
+import hashlib
+import redis
+import time
 from flask import Flask
 from flask.ext.mysql import MySQL
 from flask_restful import Api
@@ -15,6 +18,11 @@ app.config['MYSQL_DATABASE_USER'] = 'root'
 app.config['MYSQL_DATABASE_PASSWORD'] = 'root'
 app.config['MYSQL_DATABASE_DB'] = 'auth'
 app.config['MYSQL_DATABASE_HOST'] = 'localhost'
+
+REDIS_HOST = '127.0.0.1'
+REDIS_PORT = 6379
+
+redispool = redis.ConnectionPool(host=REDIS_HOST, port=REDIS_PORT, db=0)
 
 mysql.init_app(app)
 api = Api(app)
@@ -42,9 +50,12 @@ class CreateUser(Resource):
 
             if len(data) is 0:
                 conn.commit()
-                return {'StatusCode':'200','passwd length': str(len(_userPassword))}
+                content = {'message': 'User Created!'}
+                statuscode = 200
             else:
-                return {'StatusCode':'1000','Message': str(data[0])}
+                content = {'Message': str(data[0][0])}
+                statuscode = 200
+            return content, statuscode
 
         except Exception as e:
             return {'error': str(e)}
@@ -52,6 +63,18 @@ class CreateUser(Resource):
 class Auth(Resource):
     def hash_password(self, passwd, hashedpw):
         return bcrypt.hashpw(passwd, hashedpw)
+
+    def add_stream_key_to_redis(self, key):
+        redis_server = redis.Redis(connection_pool=redispool)
+        redis_server.set(key, 'true')
+
+    def generate_stream_key(self, username):
+        hash = hashlib.md5()
+        hash.update(str(time.time()))
+        hash.update(username)
+        streamkey = hash.hexdigest()
+        self.add_stream_key_to_redis(streamkey)
+        return streamkey
 
     def post(self):
         try:
@@ -71,9 +94,13 @@ class Auth(Resource):
             if(len(data)>0):
                 hashedpasswd = self.hash_password(_userPassword, str(data[0][1]))
                 if(str(data[0][1])==hashedpasswd): # Authenticated
-                    return {'status':200,'Password':str(data[0][1])}
+                    streamkey = self.generate_stream_key(_userName)
+                    content = {'message': 'Authentication success!', 'stream key': streamkey}
+                    statuscode = 200
                 else:
-                    return {'status':100,'message':'Authentication failure'}
+                    content = {'message':'Authentication failure'}
+                    statuscode = 401
+                return content, statuscode
 
         except Exception as e:
             return {'error': str(e)}

@@ -100,8 +100,13 @@ http {
         #access_log  logs/host.access.log  main;
 
         location / {
-            root   html;
-            index  index.html index.htm;
+            #For Auth API
+            include uwsgi_params;
+            uwsgi_pass 127.0.0.1:3031;
+
+            # Default values
+            # root   html;
+            # index  index.html index.htm;
         }
 
         #error_page  404              /404.html;

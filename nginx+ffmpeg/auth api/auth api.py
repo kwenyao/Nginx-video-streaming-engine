@@ -29,7 +29,7 @@ api = Api(app)
 
 class CreateUser(Resource):
     def hash_passwd(self, passwd):
-        hashed_passwd = bcrypt.hashpw(passwd, bcrypt.gensalt())
+        hashed_passwd = bcrypt.hashpw(passwd, bcrypt.gensalt(rounds=12))
         return hashed_passwd
 
     def post(self):
@@ -67,6 +67,7 @@ class Auth(Resource):
     def add_stream_key_to_redis(self, key):
         redis_server = redis.Redis(connection_pool=redispool)
         redis_server.set(key, 'true')
+        return
 
     def generate_stream_key(self, username):
         hash = hashlib.md5()
@@ -109,4 +110,4 @@ api.add_resource(Auth, '/auth')
 api.add_resource(CreateUser, '/createuser')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
